@@ -1,18 +1,20 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class BattleManager : MonoBehaviour
 {
-    private List<Stats> combatants = new List<Stats>();
+    private List<GameObject> combatants = new List<GameObject>();
     private int turnCounter = 0;
     private bool pickingTarget = false;
     private bool waitingForEnemyAttack = false;
     private bool waitingForNextTurn = false;
-    private Stats currentAttacker;
-    private Stats currentTarget;
-    private Attack selectedAttack;
+    private GameObject currentAttacker;
+    private GameObject currentTarget;
+    private PlayerAttack selectedPlayerAttack;
+    private BaseAttack selectedEnemyAttack;
 
     public GameObject p1Data;
     private Text p1HP;
@@ -24,7 +26,9 @@ public class BattleManager : MonoBehaviour
     void Start()
     {
         p1HP = p1Data.transform.GetChild(0).GetComponent<Text>();
+        p1HP.text = "HP: " + GameObject.Find("Player 1").GetComponent<PlayerStats>().HP.ToString();
         p2HP = p2Data.transform.GetChild(0).GetComponent<Text>();
+        p2HP.text = "HP: " + GameObject.Find("Player 2").GetComponent<PlayerStats>().HP.ToString();
         SetInitiative();
         AdvanceTurn();
     }
@@ -43,15 +47,15 @@ public class BattleManager : MonoBehaviour
                     if (hit.transform.CompareTag("Enemy"))
                     {
                         pickingTarget = false;
-                        currentTarget = hit.transform.gameObject.GetComponent<Stats>();
-                        ResolveAttack(currentAttacker, currentTarget);
+                        currentTarget = hit.transform.gameObject;
+                        ResolveAttack(currentAttacker.GetComponent<PlayerStats>(), currentTarget.GetComponent<EnemyStats>());
                     }
                 }
             }
             else if (waitingForEnemyAttack)
             {
                 waitingForEnemyAttack = false;
-                ResolveAttack(currentAttacker, currentTarget);
+                ResolveAttack(currentAttacker.GetComponent<EnemyStats>(), currentTarget.GetComponent<PlayerStats>());
             }
             else if (waitingForNextTurn)
             {
@@ -65,12 +69,7 @@ public class BattleManager : MonoBehaviour
     {
         foreach (Transform combatant in GameObject.Find("Combatants").transform)
         {
-            Stats m_stats = combatant.gameObject.GetComponent<Stats>();
-
-            if (m_stats != null)
-            {
-                combatants.Add(m_stats);
-            }
+            combatants.Add(combatant.gameObject);
         }
 
         combatants.Sort(SortBySpeed);
@@ -80,85 +79,114 @@ public class BattleManager : MonoBehaviour
     void AdvanceTurn()
     {
         bool enemiesLeft = false;
+        bool partyLeft = false;
 
         if (turnCounter >= combatants.Count)
         {
             turnCounter = 0;
         }
 
-        foreach(Stats combatant in combatants)
+        foreach(GameObject combatant in combatants)
         {
             if (combatant.CompareTag("Enemy"))
             {
                 enemiesLeft = true;
             }
+            
+            if (combatant.CompareTag("Player"))
+            {
+                partyLeft = true;
+            }
         }
 
-        if (enemiesLeft)
+        if (enemiesLeft && partyLeft)
         {
             currentAttacker = combatants[turnCounter];
 
-            switch (combatants[turnCounter].characterName)
+            if (currentAttacker.CompareTag("Player"))
             {
-                case "Player 1":
-                    p1Data.SetActive(true);
-                    eventText.text = "What will Player 1 do?";
-                    break;
-                case "Player 2":
-                    p2Data.SetActive(true);
-                    eventText.text = "What will Player 2 do?";
-                    break;
-                default:
-                    PrepareEnemyAttack(combatants[turnCounter]);
-                    break;
+                switch (currentAttacker.GetComponent<PlayerStats>().characterName)
+                {
+                    case "Player 1":
+                        p1Data.SetActive(true);
+                        eventText.text = "What will Player 1 do?";
+                        break;
+                    case "Player 2":
+                        p2Data.SetActive(true);
+                        eventText.text = "What will Player 2 do?";
+                        break;
+                }
+            }
+            else if (currentAttacker.CompareTag("Enemy"))
+            {
+                PrepareEnemyAttack(combatants[turnCounter].GetComponent<EnemyStats>());
             }
 
             turnCounter++;
         }
-        else
+        else if (!enemiesLeft)
         {
             eventText.text = "Battle clear!";
         }
+        else if (!partyLeft)
+        {
+            eventText.text = "Game over!";
+        }
     }
 
-    public void PreparePlayerAttack(Attack attack)
+    public void PreparePlayerAttack(PlayerAttack attack)
     {
         p1Data.SetActive(false);
         p2Data.SetActive(false);
         eventText.text = "Select a target.";
         pickingTarget = true;
-        selectedAttack = attack;
+        selectedPlayerAttack = attack;
     }
 
-    private void PrepareEnemyAttack(Stats enemy)
+    private void PrepareEnemyAttack(EnemyStats enemy)
     {
-        Attack attack = enemy.attacks[Random.Range(0, enemy.attacks.Length)];
-        float targetRoll = Random.value;
-        Stats target;
+        BaseAttack attack = enemy.attacks[Random.Range(0, enemy.attacks.Length)];
+        GeneralStats target;
 
-        if (targetRoll <= 0.5)
+        if (Random.value <= 0.5)
         {
-            target = GameObject.Find("Player 1").GetComponent<Stats>();
+            target = GameObject.Find("Player 1").GetComponent<PlayerStats>();
         }
         else
         {
-            target = GameObject.Find("Player 2").GetComponent<Stats>();
+            target = GameObject.Find("Player 2").GetComponent<PlayerStats>();
         }
 
         eventText.text = enemy.characterName + " attacked " + target.characterName + " with " + attack.attackName + "!";
 
-        currentAttacker = enemy;
-        currentTarget = target;
+        currentAttacker = enemy.gameObject;
+        currentTarget = target.gameObject;
+        selectedEnemyAttack = attack;
         waitingForEnemyAttack = true;
     }
 
-    void ResolveAttack(Stats damager, Stats damaged)
+    void ResolveAttack(EnemyStats damager, PlayerStats damaged)
     {
-        float hitRoll = Random.value;
-        if (hitRoll <= selectedAttack.hitChance)
+        if (Random.value <= damager.ACC * 0.01f)
         {
             eventText.text = "The attack hits!";
-            damaged.HP -= Mathf.RoundToInt(selectedAttack.attackStrength * damager.ATK) - damaged.DEF;
+
+            int damageAmount = Mathf.RoundToInt(selectedEnemyAttack.attackStrength * currentAttacker.GetComponent<EnemyStats>().DMG * 0.1f);
+
+            if (damager.strengths.Contains(damaged.setStat))
+            {
+                damageAmount = Mathf.RoundToInt(damageAmount * 1.5f);
+            }
+
+            damaged.HP -= damageAmount;
+
+            if (damaged.HP <= 0)
+            {
+                damaged.HP = 0;
+                combatants.Remove(damaged.gameObject);
+
+                eventText.text = damaged.characterName + " was overwhelmed!";
+            }
 
             //Updates Player HP readings, if necessary
             if (damaged.characterName == "Player 1")
@@ -169,20 +197,63 @@ public class BattleManager : MonoBehaviour
             {
                 p2HP.text = "HP: " + damaged.HP.ToString();
             }
+        }
+        else
+        {
+            eventText.text = "The attack misses!";
+        }
+
+        waitingForNextTurn = true;
+    }
+    void ResolveAttack(PlayerStats damager, EnemyStats damaged)
+    {
+        damager.setStat = selectedPlayerAttack.attackType;
+
+        if (Random.value <= selectedPlayerAttack.hitChance)
+        {
+            eventText.text = "The attack hits!";
+
+            int damageAmount;
+            int damageStat = 1;
+
+            //Base damage
+            switch (damager.setStat)
+            {
+                case GeneralStats.StatType.Willpower:
+                    damageStat = damager.willpower;
+                    break;
+                case GeneralStats.StatType.SocialSkills:
+                    damageStat = damager.socialSkills;
+                    break;
+                case GeneralStats.StatType.MentalStability:
+                    damageStat = damager.mentalStablity;
+                    break;
+            }
+
+            damageAmount = Mathf.RoundToInt(selectedPlayerAttack.attackStrength * damageStat * 0.1f);
+            Debug.Log(damageAmount);
+
+            //Check weaknesses
+            if (damaged.weaknesses.Contains(damager.setStat))
+            {
+                damageAmount = Mathf.RoundToInt(damageAmount * 1.5f);
+            }
+
+            //Crit chance
+            if (Random.value <= 0.05f)
+            {
+                eventText.text = "Critical hit!";
+                damageAmount = Mathf.RoundToInt(damageAmount * 1.5f);
+            }
+
+            damaged.HP -= damageAmount;
 
             if (damaged.HP <= 0)
             {
                 damaged.HP = 0;
-                combatants.Remove(damaged);
+                combatants.Remove(damaged.gameObject);
 
-                if (damaged.gameObject.CompareTag("Enemy"))
-                {
-                    Destroy(damaged.gameObject);
-                }
-                else if (damaged.gameObject.CompareTag("Player"))
-                {
-                    eventText.text = damaged.characterName + " was overwhelmed!";
-                }
+                Destroy(damaged.gameObject);
             }
         }
         else
@@ -193,8 +264,8 @@ public class BattleManager : MonoBehaviour
         waitingForNextTurn = true;
     }
 
-    static int SortBySpeed(Stats s1, Stats s2)
+    static int SortBySpeed(GameObject combatant1, GameObject combatant2)
     {
-        return s1.SPD.CompareTo(s2.SPD);
+        return combatant1.GetComponent<GeneralStats>().SPD.CompareTo(combatant2.GetComponent<GeneralStats>().SPD);
     }
 }

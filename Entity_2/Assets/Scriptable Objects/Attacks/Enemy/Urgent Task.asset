@@ -9,11 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700db4115002ee94f82c3fafd81771c5, type: 3}
+  m_Script: {fileID: 11500000, guid: 1ea8fbe0dbdc1c0489deaf27915e2e31, type: 3}
   m_Name: Urgent Task
   m_EditorClassIdentifier: 
   attackName: Urgent Task
-  attackDescription: 
-  attackStrength: 2
-  hitChance: 0.8
-  attackType: 1
+  attackStrength: 10

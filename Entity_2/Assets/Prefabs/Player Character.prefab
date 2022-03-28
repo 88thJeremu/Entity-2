@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 825159125777787887}
   - component: {fileID: 825159125777787872}
   - component: {fileID: 825159125777787873}
-  - component: {fileID: 3728374327734944061}
+  - component: {fileID: -5215930100094670188}
   m_Layer: 0
   m_Name: Player Character
   m_TagString: Player
@@ -97,7 +97,7 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &3728374327734944061
+--- !u!114 &-5215930100094670188
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -106,13 +106,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 825159125777787874}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2280240cc5348748917eb7ae3832170, type: 3}
+  m_Script: {fileID: 11500000, guid: b2fc6475eb140264984819bd5a842dcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: Player 1
-  HP: 10
-  ATK: 2
-  DEF: 0
+  HP: 150
   SPD: 4
-  attacks:
-  - {fileID: 11400000, guid: 52f59c65e225c0640afd86a9224e31f3, type: 2}
+  level: 1
+  willpower: 10
+  socialSkills: 10
+  mentalStablity: 10
+  willAttacks:
+  - {fileID: 11400000, guid: da5fecb050088634cbbf75e73e56bcf4, type: 2}
+  setStat: 0

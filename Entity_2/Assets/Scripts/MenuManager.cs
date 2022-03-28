@@ -5,16 +5,27 @@ using UnityEngine;
 public class MenuManager : MonoBehaviour
 {
     public GameObject actionsList;
-    public GameObject attacksList;
-    public Stats partyMember;
-    public void OpenAttacks()
+    public GameObject attackTypesList;
+    public GameObject willAttacksList;
+    public GeneralStats partyMember;
+    public void OpenAttackTypes()
     {
         actionsList.SetActive(false);
-        attacksList.SetActive(true);
+        attackTypesList.SetActive(true);
+        willAttacksList.SetActive(false);
     }
+
+    public void OpenWillAttacks()
+    {
+        actionsList.SetActive(false);
+        attackTypesList.SetActive(false);
+        willAttacksList.SetActive(true);
+    }
+
     public void OpenActions()
     {
         actionsList.SetActive(true);
-        attacksList.SetActive(false);
+        attackTypesList.SetActive(false);
+        willAttacksList.SetActive(false);
     }
 }
