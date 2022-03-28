@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 6851630840416715234}
   m_Layer: 0
   m_Name: Stressor
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -111,7 +111,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: Stressor
   HP: 10
-  ATK: 2
+  ATK: 1
   DEF: 0
   SPD: 2
-  attacks: []
+  attacks:
+  - {fileID: 11400000, guid: 894aaf648a512b349a817aa5d7e47fb3, type: 2}
